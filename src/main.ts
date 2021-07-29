@@ -88,10 +88,7 @@ async function run(): Promise<void> {
       core.debug(path)
     }
 
-
-
-    let hashset: Set<string> = new Set<string>()
-    let listGetShaError: Array<string> = new Array<string>()
+    const hashset: Set<string> = new Set<string>()
 
     // Get git hashes for each folder/file from the input parameters
     for (const path of paths) {
@@ -123,9 +120,5 @@ async function run(): Promise<void> {
     core.setFailed(error.message)
   }
 }
-// async function isAncestor(): Promise<boolean> {
 
-//   git merge-base --is-ancestor <maybe-ancestor-commit> <descendant-commit>
-//   return true;
-// }
-run()
+run();

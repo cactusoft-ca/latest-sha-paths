@@ -127,8 +127,7 @@ function run() {
             for (let path of paths) {
                 core.debug(path);
             }
-            let hashset = new Set();
-            let listGetShaError = new Array();
+            const hashset = new Set();
             // Get git hashes for each folder/file from the input parameters
             for (const path of paths) {
                 const result = yield exec.getExecOutput('git', ['log', '--pretty=format:"%H"', '-n1', path]);
@@ -155,10 +154,6 @@ function run() {
         }
     });
 }
-// async function isAncestor(): Promise<boolean> {
-//   git merge-base --is-ancestor <maybe-ancestor-commit> <descendant-commit>
-//   return true;
-// }
 run();
 
 
