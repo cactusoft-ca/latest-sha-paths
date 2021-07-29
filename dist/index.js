@@ -62,11 +62,15 @@ function run() {
                         }
                     }
                 };
-                yield exec.exec('git', ['log', '--pretty=format:"%H"', '-n1', path], options);
-                core.debug(sha);
-                listOfSha.push(sha);
-                console.log(getShaError);
-                listGetShaError.push(getShaError);
+                try {
+                    yield exec.exec('git', ['log', '--pretty=format:"%H"', '-n1', path], options);
+                    core.debug(sha);
+                    listOfSha.push(sha);
+                }
+                catch (error) {
+                    console.log(getShaError);
+                    listGetShaError.push(getShaError);
+                }
             }
             // printing the list of paths provided
             core.info('List of sha paths:');
