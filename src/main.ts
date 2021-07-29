@@ -3,7 +3,7 @@ import * as exec from '@actions/exec'
 
 async function isDescendant(maybeDescendantHash: string, ancestorHash: string) {
   if (maybeDescendantHash === ancestorHash) return 0;
-  const result = await exec.getExecOutput('git merge-base --is-ancestor ' + ancestorHash + ' ' + maybeDescendantHash);
+  const result = await exec.getExecOutput('git merge-base --is-ancestor ' + ancestorHash + ' ' + maybeDescendantHash,  undefined, { ignoreReturnCode: true });
   return result.exitCode === 0 ? -1 : 1;
 }
 
