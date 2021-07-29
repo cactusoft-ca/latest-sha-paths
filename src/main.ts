@@ -4,7 +4,7 @@ import {wait} from './wait'
 async function run(): Promise<void> {
   try {
 
-    const paths = core.getMultilineInput('multilineInputName', { required: true });
+    const paths = core.getMultilineInput('paths', { required: true });
 
     for (let path of paths) {
       core.debug(path)

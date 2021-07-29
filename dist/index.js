@@ -39,7 +39,7 @@ const core = __importStar(__nccwpck_require__(186));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const paths = core.getMultilineInput('multilineInputName', { required: true });
+            const paths = core.getMultilineInput('paths', { required: true });
             for (let path of paths) {
                 core.debug(path);
             }
