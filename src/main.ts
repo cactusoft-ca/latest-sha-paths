@@ -1,7 +1,72 @@
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
 
-import {wait} from './wait'
+async function isDescendant(maybeDescendantHash: string, ancestorHash: string) {
+  const result = await exec.getExecOutput('git', ['merge-base', '--is-ancestor', ancestorHash, maybeDescendantHash]);
+  return result.exitCode === 0 ? -1 : 1;
+}
+
+/**
+ * return the mid value among x, y, and z
+ * @param x
+ * @param y
+ * @param z
+ * @param compare
+ * @returns {Promise.<*>}
+ */
+ async function getPivot<T>(x: T, y: T, z: T, compare: (x: T, y: T) => Promise<number>) {
+  if (await compare(x, y) < 0) {
+    if (await compare(y, z) < 0) {
+      return y;
+    } else if (await compare(z, x) < 0) {
+      return x;
+    } else {
+      return z;
+    }
+  } else if (await compare(y, z) > 0) {
+    return y;
+  } else if (await compare(z, x) > 0) {
+    return x;
+  } else {
+    return z;
+  }
+}
+
+/**
+ * asynchronous quick sort
+ * @param arr array to sort
+ * @param compare asynchronous comparing function
+ * @param left index where the range of elements to be sorted starts
+ * @param right index where the range of elements to be sorted ends
+ * @returns {Promise.<*>}
+ */
+async function quickSort<T>(arr: T[], compare: (x: T, y: T) => Promise<number>, left = 0, right = arr.length - 1) {
+  if (left < right) {
+    let i = left, j = right, tmp;
+    const pivot = await getPivot(arr[i], arr[i + Math.floor((j - i) / 2)], arr[j], compare);
+    while (true) {
+      while (await compare(arr[i],  pivot) < 0) {
+        i++;
+      }
+      while (await compare(pivot, arr[j]) < 0) {
+        j--;
+      }
+      if (i >= j) {
+        break;
+      }
+      tmp = arr[i];
+      arr[i] = arr[j];
+      arr[j] = tmp;
+
+      i++;
+      j--;
+    }
+    await quickSort(arr, compare, left, i - 1);
+    await quickSort(arr, compare, j + 1, right);
+  }
+  return arr;
+}
+
 
 async function run(): Promise<void> {
   try {
@@ -17,54 +82,42 @@ async function run(): Promise<void> {
 
 
 
-    let listOfSha: Array<string> = new Array<string>()
+    let hashset: Set<string> = new Set<string>()
     let listGetShaError: Array<string> = new Array<string>()
 
-    // printing the sha of each path
-    for (let path of paths) {
-
-      let sha = '';
-      let getShaError = '';
-
-      const options = {
-        listeners: {
-          stdout: (data: Buffer) => {
-            sha += data.toString();
-          },
-          stderr: (data: Buffer) => {
-            getShaError += data.toString();
-          }
-        }
-      };
-
-      try {
-        await exec.exec('git', ['log', '--pretty=format:"%H"', '-n1', path], options);
-        listOfSha.indexOf(sha) === -1 ? listOfSha.push(sha) : core.debug(`${path} has the same sha as another path`)
-      } catch (error) {
-        listGetShaError.push(getShaError)
+    // Get git hashes for each folder/file from the input parameters
+    for (const path of paths) {
+      const result = await exec.getExecOutput('git', ['log', '--pretty=format:"%H"', '-n1', path]);
+      if (!hashset.has(result.stdout)) {
+        hashset.add(result.stdout);
       }
     }
+
 
     // printing the list of paths provided
     core.debug('List of sha paths:')
-    for (let sha of listOfSha) {
+    for (let sha of hashset) {
       core.debug(sha)
     }
 
-    // printing the list of errors if any
-    if(listGetShaError.length > 0){
-      core.error(`${listGetShaError.length} Errors encountered trying to get sha from paths`)
-      var errorMessage = '';
+    const sorted = await quickSort(Array.from(hashset), (x, y) => {
+      return isDescendant(x, y);
+    });
 
-      for (let error of listGetShaError) {
-        errorMessage += error + '\n'
-      }
-      throw new Error(errorMessage)
+    // Get oldest and youngest
+    const youngest = sorted[0];
+    const oldest = sorted[sorted.length -1];
 
-    }
+    core.setOutput('youngest', youngest);
+    core.setOutput('oldest', oldest);
+
   } catch (error) {
     core.setFailed(error.message)
   }
 }
+// async function isAncestor(): Promise<boolean> {
 
+//   git merge-base --is-ancestor <maybe-ancestor-commit> <descendant-commit>
+//   return true;
+// }
 run()

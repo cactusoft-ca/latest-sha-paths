@@ -37,6 +37,79 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(186));
 const exec = __importStar(__nccwpck_require__(514));
+function isDescendant(maybeDescendantHash, ancestorHash) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const result = yield exec.getExecOutput('git', ['merge-base', '--is-ancestor', ancestorHash, maybeDescendantHash]);
+        return result.exitCode === 0 ? -1 : 1;
+    });
+}
+/**
+ * return the mid value among x, y, and z
+ * @param x
+ * @param y
+ * @param z
+ * @param compare
+ * @returns {Promise.<*>}
+ */
+function getPivot(x, y, z, compare) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if ((yield compare(x, y)) < 0) {
+            if ((yield compare(y, z)) < 0) {
+                return y;
+            }
+            else if ((yield compare(z, x)) < 0) {
+                return x;
+            }
+            else {
+                return z;
+            }
+        }
+        else if ((yield compare(y, z)) > 0) {
+            return y;
+        }
+        else if ((yield compare(z, x)) > 0) {
+            return x;
+        }
+        else {
+            return z;
+        }
+    });
+}
+/**
+ * asynchronous quick sort
+ * @param arr array to sort
+ * @param compare asynchronous comparing function
+ * @param left index where the range of elements to be sorted starts
+ * @param right index where the range of elements to be sorted ends
+ * @returns {Promise.<*>}
+ */
+function quickSort(arr, compare, left = 0, right = arr.length - 1) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (left < right) {
+            let i = left, j = right, tmp;
+            const pivot = yield getPivot(arr[i], arr[i + Math.floor((j - i) / 2)], arr[j], compare);
+            while (true) {
+                while ((yield compare(arr[i], pivot)) < 0) {
+                    i++;
+                }
+                while ((yield compare(pivot, arr[j])) < 0) {
+                    j--;
+                }
+                if (i >= j) {
+                    break;
+                }
+                tmp = arr[i];
+                arr[i] = arr[j];
+                arr[j] = tmp;
+                i++;
+                j--;
+            }
+            yield quickSort(arr, compare, left, i - 1);
+            yield quickSort(arr, compare, j + 1, right);
+        }
+        return arr;
+    });
+}
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -46,50 +119,38 @@ function run() {
             for (let path of paths) {
                 core.debug(path);
             }
-            let listOfSha = new Array();
+            let hashset = new Set();
             let listGetShaError = new Array();
-            // printing the sha of each path
-            for (let path of paths) {
-                let sha = '';
-                let getShaError = '';
-                const options = {
-                    listeners: {
-                        stdout: (data) => {
-                            sha += data.toString();
-                        },
-                        stderr: (data) => {
-                            getShaError += data.toString();
-                        }
-                    }
-                };
-                try {
-                    yield exec.exec('git', ['log', '--pretty=format:"%H"', '-n1', path], options);
-                    listOfSha.indexOf(sha) === -1 ? listOfSha.push(sha) : core.debug(`${path} has the same sha as another path`);
-                }
-                catch (error) {
-                    listGetShaError.push(getShaError);
+            // Get git hashes for each folder/file from the input parameters
+            for (const path of paths) {
+                const result = yield exec.getExecOutput('git', ['log', '--pretty=format:"%H"', '-n1', path]);
+                if (!hashset.has(result.stdout)) {
+                    hashset.add(result.stdout);
                 }
             }
             // printing the list of paths provided
             core.debug('List of sha paths:');
-            for (let sha of listOfSha) {
+            for (let sha of hashset) {
                 core.debug(sha);
             }
-            // printing the list of errors if any
-            if (listGetShaError.length > 0) {
-                core.error(`${listGetShaError.length} Errors encountered trying to get sha from paths`);
-                var errorMessage = '';
-                for (let error of listGetShaError) {
-                    errorMessage += error + '\n';
-                }
-                throw new Error(errorMessage);
-            }
+            const sorted = yield quickSort(Array.from(hashset), (x, y) => {
+                return isDescendant(x, y);
+            });
+            // Get oldest and youngest
+            const youngest = sorted[0];
+            const oldest = sorted[sorted.length - 1];
+            core.setOutput('youngest', youngest);
+            core.setOutput('oldest', oldest);
         }
         catch (error) {
             core.setFailed(error.message);
         }
     });
 }
+// async function isAncestor(): Promise<boolean> {
+//   git merge-base --is-ancestor <maybe-ancestor-commit> <descendant-commit>
+//   return true;
+// }
 run();
 
 
