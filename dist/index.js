@@ -39,6 +39,8 @@ const core = __importStar(__nccwpck_require__(186));
 const exec = __importStar(__nccwpck_require__(514));
 function isDescendant(maybeDescendantHash, ancestorHash) {
     return __awaiter(this, void 0, void 0, function* () {
+        if (maybeDescendantHash === ancestorHash)
+            return 0;
         const result = yield exec.getExecOutput('git', ['merge-base', '--is-ancestor', ancestorHash, maybeDescendantHash]);
         return result.exitCode === 0 ? -1 : 1;
     });
