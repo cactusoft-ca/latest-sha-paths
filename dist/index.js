@@ -41,7 +41,7 @@ function isDescendant(maybeDescendantHash, ancestorHash) {
     return __awaiter(this, void 0, void 0, function* () {
         if (maybeDescendantHash === ancestorHash)
             return 0;
-        const result = yield exec.getExecOutput('git', ['merge-base', '--is-ancestor', ancestorHash, maybeDescendantHash]);
+        const result = yield exec.getExecOutput('git merge-base --is-ancestor ' + ancestorHash + ' ' + maybeDescendantHash);
         return result.exitCode === 0 ? -1 : 1;
     });
 }
