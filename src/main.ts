@@ -2,6 +2,7 @@ import * as core from '@actions/core'
 import * as exec from '@actions/exec'
 
 async function isDescendant(maybeDescendantHash: string, ancestorHash: string) {
+  if (maybeDescendantHash === ancestorHash) return 0;
   const result = await exec.getExecOutput('git', ['merge-base', '--is-ancestor', ancestorHash, maybeDescendantHash]);
   return result.exitCode === 0 ? -1 : 1;
 }
