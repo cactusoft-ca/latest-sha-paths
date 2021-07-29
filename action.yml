@@ -1,11 +1,10 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'Get latest sha from paths'
+description: 'This action returns the latest sha from a list of paths of a given github repository'
+author: 'Cactusoft'
 inputs:
-  milliseconds: # change this
+  paths:
     required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+    description: 'Paths of git repository to check'
 runs:
   using: 'node12'
   main: 'dist/index.js'
