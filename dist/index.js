@@ -46,25 +46,39 @@ function run() {
             for (let path of paths) {
                 core.debug(path);
             }
-            let myOutput = '';
-            let myError = '';
+            let listOfSha = new Array();
+            let listGetShaError = new Array();
             // printing the sha of each path
             for (let path of paths) {
+                let sha = '';
+                let getShaError = '';
                 const options = {
                     listeners: {
                         stdout: (data) => {
-                            myOutput += data.toString();
+                            sha += data.toString();
                         },
                         stderr: (data) => {
-                            myError += data.toString();
+                            getShaError += data.toString();
                         }
                     }
                 };
                 yield exec.exec('git', ['log', '--pretty=format:"%H"', '-n1', path], options);
-                core.debug(myOutput);
-                core.info(myOutput);
-                console.log(myOutput);
-                console.log(myError);
+                core.debug(sha);
+                listOfSha.push(sha);
+                console.log(getShaError);
+                listGetShaError.push(getShaError);
+            }
+            // printing the list of paths provided
+            core.info('List of sha paths:');
+            for (let sha of listOfSha) {
+                core.debug(sha);
+            }
+            // printing the list of errors if any
+            if (listGetShaError.length > 0) {
+                core.info(`${listGetShaError.length} Errors encountered trying to get sha from paths`);
+                for (let error of listGetShaError) {
+                    core.debug(error);
+                }
             }
         }
         catch (error) {
