@@ -11,6 +11,7 @@ async function isDescendant(maybeDescendantHash: string, ancestorHash: string) {
   const result = await exec.getExecOutput('git merge-base --is-ancestor ' + ancestorHash + ' ' + maybeDescendantHash,  undefined, { ignoreReturnCode: true });
   const isDescendant = result.exitCode === 0 ? -1 : 1;
   cache.set(maybeDescendantHash + ancestorHash, isDescendant);
+  cache.set(ancestorHash + maybeDescendantHash, result.exitCode === 0 ? 1 : -1);
   return isDescendant;
 }
 
