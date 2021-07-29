@@ -1,10 +1,17 @@
-import * as core from '@actions/core'
-import * as exec from '@actions/exec'
+import * as core from '@actions/core';
+import * as exec from '@actions/exec';
+
+const cache = new Map<string, number>();
 
 async function isDescendant(maybeDescendantHash: string, ancestorHash: string) {
+  if (cache.has(maybeDescendantHash + ancestorHash)) {
+    return cache.get(maybeDescendantHash + ancestorHash) as number;
+  }
   if (maybeDescendantHash === ancestorHash) return 0;
   const result = await exec.getExecOutput('git merge-base --is-ancestor ' + ancestorHash + ' ' + maybeDescendantHash,  undefined, { ignoreReturnCode: true });
-  return result.exitCode === 0 ? -1 : 1;
+  const isDescendant = result.exitCode === 0 ? -1 : 1;
+  cache.set(maybeDescendantHash + ancestorHash, isDescendant);
+  return isDescendant;
 }
 
 /**

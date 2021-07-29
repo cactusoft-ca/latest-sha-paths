@@ -37,12 +37,18 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(186));
 const exec = __importStar(__nccwpck_require__(514));
+const cache = new Map();
 function isDescendant(maybeDescendantHash, ancestorHash) {
     return __awaiter(this, void 0, void 0, function* () {
+        if (cache.has(maybeDescendantHash + ancestorHash)) {
+            return cache.get(maybeDescendantHash + ancestorHash);
+        }
         if (maybeDescendantHash === ancestorHash)
             return 0;
         const result = yield exec.getExecOutput('git merge-base --is-ancestor ' + ancestorHash + ' ' + maybeDescendantHash, undefined, { ignoreReturnCode: true });
-        return result.exitCode === 0 ? -1 : 1;
+        const isDescendant = result.exitCode === 0 ? -1 : 1;
+        cache.set(maybeDescendantHash + ancestorHash, isDescendant);
+        return isDescendant;
     });
 }
 /**
