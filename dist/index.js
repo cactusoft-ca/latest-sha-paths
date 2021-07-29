@@ -75,10 +75,12 @@ function run() {
             }
             // printing the list of errors if any
             if (listGetShaError.length > 0) {
-                core.info(`${listGetShaError.length} Errors encountered trying to get sha from paths`);
+                core.error(`${listGetShaError.length} Errors encountered trying to get sha from paths`);
+                var errorMessage = '';
                 for (let error of listGetShaError) {
-                    core.debug(error);
+                    errorMessage += error + '\n';
                 }
+                throw new Error(errorMessage);
             }
         }
         catch (error) {
