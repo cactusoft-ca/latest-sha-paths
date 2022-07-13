@@ -56,7 +56,7 @@ function run() {
                     path
                 ]);
                 if (!hashset.has(result.stdout)) {
-                    hashset.add(result.stdout.replace('"', '').replace("'", ''));
+                    hashset.add(replaceAll(replaceAll(result.stdout, '"', ''), "'", ''));
                 }
             }
             // printing the list of paths provided
@@ -72,7 +72,9 @@ function run() {
                     `${sha}...HEAD`,
                     "--pretty='%H'"
                 ]);
-                const hashes = result.stdout.split(/\r?\n/).map(x => x.replace('"', '').replace("'", ''));
+                const hashes = result.stdout
+                    .split(/\r?\n/)
+                    .map(x => replaceAll(replaceAll(x, '"', ''), "'", ''));
                 hashes.push(sha);
                 hashesList.push(hashes);
             }
@@ -94,6 +96,9 @@ function run() {
             core.setFailed(error.message);
         }
     });
+}
+function replaceAll(str, find, replace) {
+    return str.replace(new RegExp(find, 'g'), replace);
 }
 run();
 

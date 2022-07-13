@@ -22,7 +22,7 @@ async function run(): Promise<void> {
         path
       ])
       if (!hashset.has(result.stdout)) {
-        hashset.add(result.stdout.replace('"', '').replace("'", ''))
+        hashset.add(replaceAll(replaceAll(result.stdout, '"', ''), "'", ''))
       }
     }
 
@@ -44,7 +44,7 @@ async function run(): Promise<void> {
 
       const hashes = result.stdout
         .split(/\r?\n/)
-        .map(x => x.replace('"', '').replace("'", ''))
+        .map(x => replaceAll(replaceAll(x, '"', ''), "'", ''))
       hashes.push(sha)
       hashesList.push(hashes)
     }
@@ -66,6 +66,10 @@ async function run(): Promise<void> {
   } catch (error) {
     core.setFailed(error.message)
   }
+}
+
+function replaceAll(str: string, find: string, replace: string): string {
+  return str.replace(new RegExp(find, 'g'), replace)
 }
 
 run()
