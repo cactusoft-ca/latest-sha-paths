@@ -22,7 +22,7 @@ async function run(): Promise<void> {
         path
       ])
       if (!hashset.has(result.stdout)) {
-        hashset.add(result.stdout.slice(1, -1))
+        hashset.add(result.stdout.replace('"', ''))
       }
     }
 
