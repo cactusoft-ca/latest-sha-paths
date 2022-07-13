@@ -74,7 +74,8 @@ function run() {
                 ]);
                 const hashes = result.stdout
                     .split(/\r?\n/)
-                    .map(x => replaceAll(replaceAll(x, '"', ''), "'", ''));
+                    .map(x => replaceAll(replaceAll(x, '"', ''), "'", ''))
+                    .filter(x => x);
                 hashes.push(sha);
                 hashesList.push(hashes);
             }

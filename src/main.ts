@@ -45,6 +45,8 @@ async function run(): Promise<void> {
       const hashes = result.stdout
         .split(/\r?\n/)
         .map(x => replaceAll(replaceAll(x, '"', ''), "'", ''))
+        .filter(x => x)
+
       hashes.push(sha)
       hashesList.push(hashes)
     }
