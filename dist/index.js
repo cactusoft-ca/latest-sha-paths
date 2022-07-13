@@ -56,7 +56,7 @@ function run() {
                     path
                 ]);
                 if (!hashset.has(result.stdout)) {
-                    hashset.add(result.stdout);
+                    hashset.add(result.stdout.slice(1, -1));
                 }
             }
             // printing the list of paths provided
