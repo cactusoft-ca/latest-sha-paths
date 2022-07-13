@@ -37,123 +37,66 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(186));
 const exec = __importStar(__nccwpck_require__(514));
-const cache = new Map();
-function isDescendant(maybeDescendantHash, ancestorHash) {
-    return __awaiter(this, void 0, void 0, function* () {
-        if (cache.has(maybeDescendantHash + ancestorHash)) {
-            return cache.get(maybeDescendantHash + ancestorHash);
-        }
-        if (maybeDescendantHash === ancestorHash)
-            return 0;
-        const result = yield exec.getExecOutput('git merge-base --is-ancestor ' + ancestorHash + ' ' + maybeDescendantHash, undefined, { ignoreReturnCode: true });
-        const isDescendant = result.exitCode === 0 ? -1 : 1;
-        cache.set(maybeDescendantHash + ancestorHash, isDescendant);
-        cache.set(ancestorHash + maybeDescendantHash, result.exitCode === 0 ? 1 : -1);
-        return isDescendant;
-    });
-}
-/**
- * return the mid value among x, y, and z
- * @param x
- * @param y
- * @param z
- * @param compare
- * @returns {Promise.<*>}
- */
-function getPivot(x, y, z, compare) {
-    return __awaiter(this, void 0, void 0, function* () {
-        if ((yield compare(x, y)) < 0) {
-            if ((yield compare(y, z)) < 0) {
-                return y;
-            }
-            else if ((yield compare(z, x)) < 0) {
-                return x;
-            }
-            else {
-                return z;
-            }
-        }
-        else if ((yield compare(y, z)) > 0) {
-            return y;
-        }
-        else if ((yield compare(z, x)) > 0) {
-            return x;
-        }
-        else {
-            return z;
-        }
-    });
-}
-/**
- * asynchronous quick sort
- * @param arr array to sort
- * @param compare asynchronous comparing function
- * @param left index where the range of elements to be sorted starts
- * @param right index where the range of elements to be sorted ends
- * @returns {Promise.<*>}
- */
-function quickSort(arr, compare, left = 0, right = arr.length - 1) {
-    return __awaiter(this, void 0, void 0, function* () {
-        if (left < right) {
-            let i = left, j = right, tmp;
-            const pivot = yield getPivot(arr[i], arr[i + Math.floor((j - i) / 2)], arr[j], compare);
-            while (true) {
-                while ((yield compare(arr[i], pivot)) < 0) {
-                    i++;
-                }
-                while ((yield compare(pivot, arr[j])) < 0) {
-                    j--;
-                }
-                if (i >= j) {
-                    break;
-                }
-                tmp = arr[i];
-                arr[i] = arr[j];
-                arr[j] = tmp;
-                i++;
-                j--;
-            }
-            yield quickSort(arr, compare, left, i - 1);
-            yield quickSort(arr, compare, j + 1, right);
-        }
-        return arr;
-    });
-}
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const paths = core.getMultilineInput('paths', { required: true });
             // printing the list of paths provided
             core.debug('List of provided paths:');
-            for (let path of paths) {
+            for (const path of paths) {
                 core.debug(path);
             }
             const hashset = new Set();
             // Get git hashes for each folder/file from the input parameters
             for (const path of paths) {
-                const result = yield exec.getExecOutput('git', ['log', '--pretty=format:"%H"', '-n1', path]);
+                const result = yield exec.getExecOutput('git', [
+                    'log',
+                    '--pretty=format:"%H"',
+                    '-n1',
+                    path
+                ]);
                 if (!hashset.has(result.stdout)) {
-                    hashset.add(result.stdout);
+                    hashset.add(replaceAll(replaceAll(result.stdout, '"', ''), "'", ''));
                 }
             }
             // printing the list of paths provided
             core.debug('List of sha paths:');
-            for (let sha of hashset) {
+            for (const sha of hashset) {
                 core.debug(sha);
             }
-            const sorted = yield quickSort(Array.from(hashset), (x, y) => {
-                return isDescendant(x, y);
-            });
-            // Get oldest and youngest
-            const youngest = sorted[0];
-            const oldest = sorted[sorted.length - 1];
-            core.setOutput('youngest', youngest);
-            core.setOutput('oldest', oldest);
+            const hashesList = [];
+            for (const sha of hashset) {
+                const result = yield exec.getExecOutput('git', ['log', '--ancestry-path', `${sha}...HEAD`, "--pretty='%H'"], { silent: true });
+                const hashes = result.stdout
+                    .split(/\r?\n/)
+                    .map(x => replaceAll(replaceAll(x, '"', ''), "'", ''))
+                    .filter(x => x);
+                hashes.push(sha);
+                hashesList.push(hashes);
+            }
+            const smallestLength = Math.min(...hashesList.map(x => x.length));
+            let commonHash;
+            for (let i = 0; i < smallestLength; i++) {
+                const values = hashesList.map(x => x[i]);
+                const distinctValues = [...new Set(values)];
+                if (distinctValues.length !== 1) {
+                    core.debug(`Found distinct hash value: ${JSON.stringify(distinctValues)}`);
+                    break;
+                }
+                else {
+                    core.debug(`Setting common Hash to: ${distinctValues[0]}`);
+                    commonHash = distinctValues[0];
+                }
+            }
+            core.setOutput('youngest', commonHash);
         }
         catch (error) {
             core.setFailed(error.message);
         }
     });
+}
+function replaceAll(str, find, replace) {
+    return str.replace(new RegExp(find, 'g'), replace);
 }
 run();
 
