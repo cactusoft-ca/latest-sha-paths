@@ -32,10 +32,16 @@ async function run(): Promise<void> {
       core.debug(sha)
     }
 
-    const result = await exec.getExecOutput(
-      'str=$((for c; do git log --all --merges --ancestry-path ^$c --pretty=\'%aI %H %s\'; done ) | sort | uniq -c | awk "\\$1 == $# {print;exit}");arr=(${str});echo ${arr[2]}',
-      Array.from(hashset)
-    )
+    const cmd = [
+      `str=$((for c; do git log --all --merges --ancestry-path ^$c --pretty=\\'%aI %H %s\\'; done ) | sort | uniq -c | awk "\\$1 == $# {print;exit}");
+    arr=(\${str});
+    echo \${arr[2]}`
+    ]
+
+    // adding parameters
+    cmd.concat(Array.from(hashset))
+
+    const result = await exec.getExecOutput('sh', cmd)
 
     core.setOutput('youngest', result.stdout)
   } catch (error) {
