@@ -66,12 +66,7 @@ function run() {
             }
             const hashesList = [];
             for (const sha of hashset) {
-                const result = yield exec.getExecOutput('git', [
-                    'log',
-                    '--ancestry-path',
-                    `${sha}...HEAD`,
-                    "--pretty='%H'"
-                ]);
+                const result = yield exec.getExecOutput('git', ['log', '--ancestry-path', `${sha}...HEAD`, "--pretty='%H'"], { silent: true });
                 const hashes = result.stdout
                     .split(/\r?\n/)
                     .map(x => replaceAll(replaceAll(x, '"', ''), "'", ''))
@@ -85,9 +80,11 @@ function run() {
                 const values = hashesList.map(x => x[i]);
                 const distinctValues = [...new Set(values)];
                 if (distinctValues.length !== 1) {
+                    core.debug(`Found distinct hash value: ${JSON.stringify(distinctValues)}`);
                     break;
                 }
                 else {
+                    core.debug(`Setting common Hash to: ${distinctValues[0]}`);
                     commonHash = distinctValues[0];
                 }
             }
