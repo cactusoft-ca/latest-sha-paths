@@ -64,15 +64,31 @@ function run() {
             for (const sha of hashset) {
                 core.debug(sha);
             }
-            const cmd = [
-                `str=$((for c; do git log --all --merges --ancestry-path ^$c --pretty=\\'%aI %H %s\\'; done ) | sort | uniq -c | awk "\\$1 == $# {print;exit}");
-    arr=(\${str});
-    echo \${arr[2]}`
-            ];
-            // adding parameters
-            cmd.concat(Array.from(hashset));
-            const result = yield exec.getExecOutput('sh', cmd);
-            core.setOutput('youngest', result.stdout);
+            const hashesList = [];
+            for (const sha of hashset) {
+                const result = yield exec.getExecOutput('git', [
+                    'log',
+                    '--ancestry-path',
+                    `${sha}...HEAD`,
+                    "--pretty='%H'"
+                ]);
+                const hashes = result.stdout.split(/\r?\n/);
+                hashes.push(sha);
+                hashesList.push(hashes);
+            }
+            const smallestLength = Math.min(...hashesList.map(x => x.length));
+            let commonHash;
+            for (let i = 0; i < smallestLength; i++) {
+                const values = hashesList.map(x => x[i]);
+                const distinctValues = [...new Set(values)];
+                if (distinctValues.length !== 1) {
+                    break;
+                }
+                else {
+                    commonHash = distinctValues[0];
+                }
+            }
+            core.setOutput('youngest', commonHash);
         }
         catch (error) {
             core.setFailed(error.message);
