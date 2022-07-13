@@ -22,7 +22,7 @@ async function run(): Promise<void> {
         path
       ])
       if (!hashset.has(result.stdout)) {
-        hashset.add(result.stdout.replace('"', ''))
+        hashset.add(result.stdout.replace('"', '').replace("'", ''))
       }
     }
 
@@ -42,7 +42,9 @@ async function run(): Promise<void> {
         "--pretty='%H'"
       ])
 
-      const hashes = result.stdout.split(/\r?\n/)
+      const hashes = result.stdout
+        .split(/\r?\n/)
+        .map(x => x.replace('"', '').replace("'", ''))
       hashes.push(sha)
       hashesList.push(hashes)
     }
