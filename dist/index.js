@@ -91,7 +91,12 @@ function run() {
             core.setOutput('youngest', commonHash);
         }
         catch (error) {
-            core.setFailed(error.message);
+            if (error != null &&
+                typeof error === 'object' &&
+                'message' in error &&
+                typeof error.message === 'string') {
+                core.setFailed(error.message);
+            }
         }
     });
 }

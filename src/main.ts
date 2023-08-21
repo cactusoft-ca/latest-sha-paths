@@ -32,7 +32,7 @@ async function run(): Promise<void> {
       core.debug(sha)
     }
 
-    const list: {hashes: string[], length: number, hashSet: Set<string>}[] = []
+    const list: {hashes: string[]; length: number; hashSet: Set<string>}[] = []
 
     for (const sha of hashset) {
       const result = await exec.getExecOutput(
@@ -44,7 +44,7 @@ async function run(): Promise<void> {
       const hashes: string[] = result.stdout
         .split(/\r?\n/)
         .map((x: string) => replaceAll(replaceAll(x, '"', ''), "'", ''))
-        .filter((x: any) => x)
+        .filter((x: string) => x)
 
       hashes.push(sha)
       list.push({hashes, length: hashes.length, hashSet: new Set(hashes)})
@@ -54,7 +54,7 @@ async function run(): Promise<void> {
     const smallestList = list.find(x => x.length === smallestLength) ?? list[0]
     let commonHash
 
-    for (let i = smallestLength - 1; i >= 0; i --) {
+    for (let i = smallestLength - 1; i >= 0; i--) {
       // Get the last hash to check for common ancestry
       const hash = smallestList.hashes[i]
 
@@ -67,8 +67,15 @@ async function run(): Promise<void> {
     }
 
     core.setOutput('youngest', commonHash)
-  } catch (error: any) {
-    core.setFailed(error.message)
+  } catch (error) {
+    if (
+      error != null &&
+      typeof error === 'object' &&
+      'message' in error &&
+      typeof error.message === 'string'
+    ) {
+      core.setFailed(error.message)
+    }
   }
 }
 
