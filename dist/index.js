@@ -38,6 +38,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(186));
 const exec = __importStar(__nccwpck_require__(514));
 function run() {
+    var _a;
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const paths = core.getMultilineInput('paths', { required: true });
@@ -64,28 +65,27 @@ function run() {
             for (const sha of hashset) {
                 core.debug(sha);
             }
-            const hashesList = [];
+            const list = [];
             for (const sha of hashset) {
                 const result = yield exec.getExecOutput('git', ['log', '--ancestry-path', `${sha}...HEAD`, "--pretty='%H'"], { silent: true });
                 const hashes = result.stdout
                     .split(/\r?\n/)
-                    .map(x => replaceAll(replaceAll(x, '"', ''), "'", ''))
-                    .filter(x => x);
+                    .map((x) => replaceAll(replaceAll(x, '"', ''), "'", ''))
+                    .filter((x) => x);
                 hashes.push(sha);
-                hashesList.push(hashes);
+                list.push({ hashes, length: hashes.length, hashSet: new Set(hashes) });
             }
-            const smallestLength = Math.min(...hashesList.map(x => x.length));
+            const smallestLength = Math.min(...list.map(x => x.length));
+            const smallestList = (_a = list.find(x => x.length === smallestLength)) !== null && _a !== void 0 ? _a : list[0];
             let commonHash;
-            for (let i = 0; i < smallestLength; i++) {
-                const values = hashesList.map(x => x[i]);
-                const distinctValues = [...new Set(values)];
-                if (distinctValues.length !== 1) {
-                    core.debug(`Found distinct hash value: ${JSON.stringify(distinctValues)}`);
+            for (let i = smallestLength - 1; i >= 0; i--) {
+                // Get the last hash to check for common ancestry
+                const hash = smallestList.hashes[i];
+                // Check if all trees contains that hash
+                if (list.filter(x => !x.hashSet.has(hash)).length === 0) {
+                    core.debug(`Found last common hash value: ${hash}`);
+                    commonHash = hash;
                     break;
-                }
-                else {
-                    core.debug(`Setting common Hash to: ${distinctValues[0]}`);
-                    commonHash = distinctValues[0];
                 }
             }
             core.setOutput('youngest', commonHash);
